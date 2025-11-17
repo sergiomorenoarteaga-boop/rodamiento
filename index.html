@@ -388,25 +388,114 @@
             <!-- Selección de Rodamiento -->
             <div class="sidebar-section">
                 <h3>📊 Rodamiento</h3>
-                <select id="bearingType" onchange="updateBearingInfo()">
-                    <optgroup label="Serie 6200">
-                        <option value="6200">SKF 6200</option>
-                        <option value="6201">SKF 6201</option>
-                        <option value="6202">SKF 6202</option>
-                        <option value="6203">SKF 6203</option>
-                        <option value="6204">SKF 6204</option>
-                        <option value="6205" selected>SKF 6205</option>
-                        <option value="6206">SKF 6206</option>
-                        <option value="6207">SKF 6207</option>
-                        <option value="6208">SKF 6208</option>
-                        <option value="6209">SKF 6209</option>
-                    </optgroup>
-                    <optgroup label="Serie 6300">
-                        <option value="6304">SKF 6304</option>
-                        <option value="6305">SKF 6305</option>
-                        <option value="6306">SKF 6306</option>
-                    </optgroup>
-                </select>
+               <select id="bearingType" onchange="updateBearingInfo()">
+    <!-- SERIE 6000 - LIGEROS -->
+    <optgroup label="🔵 Serie 6000 (Ligeros - Maquinaria pequeña)">
+        <option value="6000">SKF 6000 (10×26×8)</option>
+        <option value="6001">SKF 6001 (12×28×8)</option>
+        <option value="6002">SKF 6002 (15×32×9)</option>
+        <option value="6003">SKF 6003 (17×35×10)</option>
+        <option value="6004">SKF 6004 (20×42×12)</option>
+        <option value="6005">SKF 6005 (25×47×12)</option>
+        <option value="6006">SKF 6006 (30×55×13)</option>
+        <option value="6007">SKF 6007 (35×62×14)</option>
+        <option value="6008">SKF 6008 (40×68×15)</option>
+        <option value="6009">SKF 6009 (45×75×16)</option>
+        <option value="6010">SKF 6010 (50×80×16)</option>
+    </optgroup>
+
+    <!-- SERIE 6200 - USO GENERAL (MÁS COMUNES) -->
+    <optgroup label="⭐ Serie 6200 (Uso General - MÁS COMUNES)">
+        <option value="6200">SKF 6200 (10×30×9)</option>
+        <option value="6201">SKF 6201 (12×32×10)</option>
+        <option value="6202">SKF 6202 (15×35×11)</option>
+        <option value="6203">SKF 6203 (17×40×12)</option>
+        <option value="6204">SKF 6204 (20×47×14)</option>
+        <option value="6205" selected>SKF 6205 (25×52×15) ⭐</option>
+        <option value="6206">SKF 6206 (30×62×16)</option>
+        <option value="6207">SKF 6207 (35×72×17)</option>
+        <option value="6208">SKF 6208 (40×80×18)</option>
+        <option value="6209">SKF 6209 (45×85×19)</option>
+        <option value="6210">SKF 6210 (50×90×20)</option>
+        <option value="6211">SKF 6211 (55×100×21)</option>
+        <option value="6212">SKF 6212 (60×110×22)</option>
+        <option value="6213">SKF 6213 (65×120×23)</option>
+        <option value="6214">SKF 6214 (70×125×24)</option>
+        <option value="6215">SKF 6215 (75×130×25)</option>
+        <option value="6216">SKF 6216 (80×140×26)</option>
+    </optgroup>
+
+    <!-- SERIE 6300 - CARGAS MEDIAS -->
+    <optgroup label="🟢 Serie 6300 (Cargas Medias - Bombas, Motores)">
+        <option value="6300">SKF 6300 (10×35×11)</option>
+        <option value="6301">SKF 6301 (12×37×12)</option>
+        <option value="6302">SKF 6302 (15×42×13)</option>
+        <option value="6303">SKF 6303 (17×47×14)</option>
+        <option value="6304">SKF 6304 (20×52×15)</option>
+        <option value="6305">SKF 6305 (25×62×17)</option>
+        <option value="6306">SKF 6306 (30×72×19)</option>
+        <option value="6307">SKF 6307 (35×80×21)</option>
+        <option value="6308">SKF 6308 (40×90×23)</option>
+        <option value="6309">SKF 6309 (45×100×25)</option>
+        <option value="6310">SKF 6310 (50×110×27)</option>
+        <option value="6311">SKF 6311 (55×120×29)</option>
+        <option value="6312">SKF 6312 (60×130×31)</option>
+        <option value="6313">SKF 6313 (65×140×33)</option>
+        <option value="6314">SKF 6314 (70×150×35)</option>
+        <option value="6315">SKF 6315 (75×160×37)</option>
+        <option value="6316">SKF 6316 (80×170×39)</option>
+    </optgroup>
+
+    <!-- SERIE 6400 - CARGAS ALTAS -->
+    <optgroup label="🟠 Serie 6400 (Cargas Altas - Maquinaria Pesada)">
+        <option value="6403">SKF 6403 (17×62×17)</option>
+        <option value="6404">SKF 6404 (20×72×19)</option>
+        <option value="6405">SKF 6405 (25×80×21)</option>
+        <option value="6406">SKF 6406 (30×90×23)</option>
+        <option value="6407">SKF 6407 (35×100×25)</option>
+        <option value="6408">SKF 6408 (40×110×27)</option>
+    </optgroup>
+
+    <!-- SERIE 7200 - CONTACTO ANGULAR -->
+    <optgroup label="🔴 Serie 7200 (Contacto Angular - Altas Velocidades)">
+        <option value="7205">SKF 7205 BEGAP (25×52×15)</option>
+        <option value="7206">SKF 7206 BEGAP (30×62×16)</option>
+        <option value="7207">SKF 7207 BEGAP (35×72×17)</option>
+        <option value="7208">SKF 7208 BEGAP (40×80×18)</option>
+        <option value="7209">SKF 7209 BEGAP (45×85×19)</option>
+        <option value="7210">SKF 7210 BEGAP (50×90×20)</option>
+    </optgroup>
+
+    <!-- SERIE NU - RODILLOS CILÍNDRICOS -->
+    <optgroup label="🟣 Serie NU (Rodillos Cilíndricos - Cargas Radiales Altas)">
+        <option value="NU205">SKF NU 205 ECP (25×52×15)</option>
+        <option value="NU206">SKF NU 206 ECP (30×62×16)</option>
+        <option value="NU207">SKF NU 207 ECP (35×72×17)</option>
+        <option value="NU208">SKF NU 208 ECP (40×80×18)</option>
+        <option value="NU209">SKF NU 209 ECP (45×85×19)</option>
+        <option value="NU210">SKF NU 210 ECP (50×90×20)</option>
+    </optgroup>
+
+    <!-- SERIE 32000 - RODILLOS CÓNICOS -->
+    <optgroup label="🟡 Serie 32000 (Rodillos Cónicos - Cargas Combinadas)">
+        <option value="32005">SKF 32005 X (25×47×15)</option>
+        <option value="32006">SKF 32006 X (30×55×17)</option>
+        <option value="32007">SKF 32007 X (35×62×18)</option>
+        <option value="32008">SKF 32008 X (40×68×19)</option>
+        <option value="32009">SKF 32009 X (45×75×20)</option>
+        <option value="32010">SKF 32010 X (50×80×20)</option>
+    </optgroup>
+
+    <!-- SERIE 22200 - RODILLOS ESFÉRICOS -->
+    <optgroup label="🔵 Serie 22200 (Rodillos Esféricos - Cargas Muy Altas)">
+        <option value="22205">SKF 22205 E (25×52×18)</option>
+        <option value="22206">SKF 22206 E (30×62×20)</option>
+        <option value="22207">SKF 22207 E (35×72×23)</option>
+        <option value="22208">SKF 22208 E (40×80×23)</option>
+        <option value="22209">SKF 22209 E (45×85×23)</option>
+        <option value="22210">SKF 22210 E (50×90×23)</option>
+    </optgroup>
+</select>
 
                 <div class="bearing-info-display">
                     <p⚙️ Interior: <strong id="innerDiameter">-</strong> mm</p>
