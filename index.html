@@ -1,0 +1,1296 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#2c3e50">
+    <title>Analizador de Rodamientos Pro</title>
+    
+    <!-- ÚNICA DEPENDENCIA EXTERNA: Base de datos de rodamientos -->
+    <script src="rodamientos.js"></script>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #3498db;
+            --secondary: #2c3e50;
+            --success: #27ae60;
+            --warning: #f39c12;
+            --danger: #e74c3c;
+            --dark: #1a1a1a;
+            --light: #ecf0f1;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            overflow-x: hidden;
+        }
+
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: var(--secondary);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            z-index: 1000;
+        }
+
+        .header h1 {
+            font-size: 1.5em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .menu-toggle {
+            display: none;
+            background: var(--primary);
+            border: none;
+            color: white;
+            font-size: 1.5em;
+            width: 45px;
+            height: 45px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .container {
+            display: flex;
+            margin-top: 60px;
+            height: calc(100vh - 60px);
+        }
+
+        .sidebar {
+            width: 320px;
+            background: var(--secondary);
+            color: white;
+            padding: 20px;
+            overflow-y: auto;
+            transition: transform 0.3s;
+        }
+
+        .sidebar.hidden {
+            transform: translateX(-100%);
+        }
+
+        .sidebar-section {
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .sidebar-section h3 {
+            color: var(--primary);
+            margin-bottom: 15px;
+            font-size: 1.1em;
+        }
+
+        .sidebar-section.rpm-detection {
+            background: linear-gradient(135deg, #8e44ad, #71368a);
+        }
+
+        .main-content {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        label {
+            display: block;
+            margin-top: 12px;
+            margin-bottom: 5px;
+            color: #ecf0f1;
+            font-size: 0.9em;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid var(--primary);
+            border-radius: 8px;
+            background: rgba(255,255,255,0.9);
+            font-size: 1em;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            margin-top: 10px;
+            border: none;
+            border-radius: 8px;
+            background: linear-gradient(135deg, var(--primary), #2980b9);
+            color: white;
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.4);
+        }
+
+        button:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        button.success { background: linear-gradient(135deg, var(--success), #229954); }
+        button.warning { background: linear-gradient(135deg, var(--warning), #d68910); }
+        button.danger { background: linear-gradient(135deg, var(--danger), #c0392b); }
+        button.secondary { background: linear-gradient(135deg, #8e44ad, #71368a); }
+
+        .alert {
+            padding: 15px 20px;
+            margin-bottom: 20px;
+            border-radius: 10px;
+            display: none;
+            font-weight: 500;
+        }
+
+        .alert-success { background: #d4edda; color: #155724; border-left: 4px solid var(--success); }
+        .alert-error { background: #f8d7da; color: #721c24; border-left: 4px solid var(--danger); }
+        .alert-warning { background: #fff3cd; color: #856404; border-left: 4px solid var(--warning); }
+        .alert-info { background: #d1ecf1; color: #0c5460; border-left: 4px solid var(--primary); }
+
+        .chart-container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .chart-controls {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .signal-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 15px;
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: 0.2s;
+            border: 2px solid transparent;
+        }
+
+        .signal-checkbox:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .signal-checkbox input {
+            width: auto;
+            cursor: pointer;
+        }
+
+        .signal-checkbox.active {
+            border-color: var(--primary);
+            background: #e3f2fd;
+        }
+
+        .signal-label {
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .color-indicator {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            border: 2px solid #fff;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+
+        canvas {
+            width: 100% !important;
+            height: 500px !important;
+            max-height: 70vh;
+        }
+
+        .diagnosis-panel {
+            background: linear-gradient(135deg, #16a085, #138d75);
+            color: white;
+        }
+
+        .diagnosis-item {
+            background: rgba(255,255,255,0.1);
+            padding: 10px;
+            border-radius: 5px;
+            margin: 8px 0;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+
+        .status-ok { background: var(--success); }
+        .status-warning { background: var(--warning); }
+        .status-critical { background: var(--danger); }
+
+        .bearing-info-display {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            margin-top: 10px;
+            padding: 10px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 5px;
+        }
+
+        .bearing-info-display p {
+            margin: 3px 0;
+            font-size: 0.9em;
+        }
+
+        .rpm-result {
+            background: rgba(255,255,255,0.15);
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            display: none;
+        }
+
+        .rpm-result.show {
+            display: block;
+            animation: slideIn 0.3s;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .rpm-value {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #3498db;
+            text-align: center;
+            margin: 10px 0;
+        }
+
+        .confidence-bar {
+            width: 100%;
+            height: 20px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .confidence-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--success), #2ecc71);
+            transition: width 0.5s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+
+        @media (max-width: 768px) {
+            .menu-toggle {
+                display: block;
+            }
+
+            .sidebar {
+                position: fixed;
+                left: 0;
+                top: 60px;
+                height: calc(100vh - 60px);
+                z-index: 999;
+                transform: translateX(-100%);
+            }
+
+            .sidebar.open {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                width: 100%;
+            }
+
+            canvas {
+                height: 400px !important;
+            }
+
+            .chart-controls {
+                flex-direction: column;
+            }
+
+            .bearing-info-display {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.1);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--primary);
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>
+            <span>🔊</span>
+            <span>Analizador de Rodamientos</span>
+        </h1>
+        <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+    </div>
+
+    <div class="container">
+        <div class="sidebar" id="sidebar">
+            <!-- Selección de Rodamiento -->
+            <div class="sidebar-section">
+                <h3>📊 Rodamiento</h3>
+                <select id="bearingType" onchange="updateBearingInfo()">
+                    <optgroup label="Serie 6200">
+                        <option value="6200">SKF 6200</option>
+                        <option value="6201">SKF 6201</option>
+                        <option value="6202">SKF 6202</option>
+                        <option value="6203">SKF 6203</option>
+                        <option value="6204">SKF 6204</option>
+                        <option value="6205" selected>SKF 6205</option>
+                        <option value="6206">SKF 6206</option>
+                        <option value="6207">SKF 6207</option>
+                        <option value="6208">SKF 6208</option>
+                        <option value="6209">SKF 6209</option>
+                    </optgroup>
+                    <optgroup label="Serie 6300">
+                        <option value="6304">SKF 6304</option>
+                        <option value="6305">SKF 6305</option>
+                        <option value="6306">SKF 6306</option>
+                    </optgroup>
+                </select>
+
+                <div class="bearing-info-display">
+                    <p⚙️ Interior: <strong id="innerDiameter">-</strong> mm</p>
+                    <p>⚙️ Exterior: <strong id="outerDiameter">-</strong> mm</p>
+                    <p>⚙️ Ancho: <strong id="width">-</strong> mm</p>
+                    <p>🔵 Bolas: <strong id="ballCount">-</strong></p>
+                </div>
+
+                <label for="rotationalSpeed">🔄 Velocidad (RPM):</label>
+                <input type="number" id="rotationalSpeed" value="1500" min="100" max="20000" step="50">
+            </div>
+
+            <!-- Detección Automática de RPM -->
+            <div class="sidebar-section rpm-detection">
+                <h3>🎯 Detección Automática RPM</h3>
+                <p style="font-size: 0.85em; margin-bottom: 10px; opacity: 0.9;">
+                    El sistema escuchará el rodamiento durante 5 segundos y calculará las RPM automáticamente
+                </p>
+                <button class="secondary" onclick="detectRPM()" id="detectRPMButton">
+                    🎧 Detectar RPM
+                </button>
+                
+                <div id="rpmResult" class="rpm-result">
+                    <p style="text-align: center; margin-bottom: 5px; font-size: 0.9em;">RPM Detectado:</p>
+                    <div class="rpm-value" id="detectedRPMValue">0</div>
+                    <div class="confidence-bar">
+                        <div class="confidence-fill" id="confidenceFill" style="width: 0%;">
+                            0%
+                        </div>
+                    </div>
+                    <p style="text-align: center; margin-top: 10px; font-size: 0.85em;" id="detectionMethod">-</p>
+                    <button class="success" onclick="applyDetectedRPM()" style="margin-top: 10px;">
+                        ✅ Aplicar RPM
+                    </button>
+                </div>
+            </div>
+
+            <!-- Controles -->
+            <div class="sidebar-section">
+                <h3>🎮 Controles</h3>
+                <button class="success" onclick="startAnalysis()" id="startButton">
+                    ▶️ Iniciar Análisis
+                </button>
+                <button class="warning" onclick="stopAnalysis()" id="stopButton" disabled>
+                    ⏸️ Detener
+                </button>
+                <button onclick="resetAnalyzer()" id="resetButton">
+                    🔄 Reiniciar
+                </button>
+            </div>
+
+            <!-- Diagnóstico -->
+            <div class="sidebar-section diagnosis-panel">
+                <h3>🏥 Diagnóstico</h3>
+                <div id="currentStatus" class="diagnosis-item">
+                    <span class="status-badge status-ok">OK</span>
+                    <p style="margin-top: 5px;">No analizado</p>
+                </div>
+                <div class="diagnosis-item" id="faultDetection">
+                    Fallos: Ninguno
+                </div>
+                <div class="diagnosis-item" id="confidenceLevel">
+                    Confianza: -
+                </div>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div id="alert" class="alert"></div>
+
+            <div class="chart-container">
+                <h2 style="margin-bottom: 15px; color: var(--secondary);">
+                    📈 Análisis en Tiempo Real
+                </h2>
+
+                <!-- Controles de Señales -->
+                <div class="chart-controls">
+                    <label class="signal-checkbox active">
+                        <input type="checkbox" id="showSpectrum" checked onchange="toggleSignal('spectrum')">
+                        <span class="signal-label">
+                            <span class="color-indicator" style="background: #3498db;"></span>
+                            Espectro Frecuencia
+                        </span>
+                    </label>
+                    
+                    <label class="signal-checkbox active">
+                        <input type="checkbox" id="showVibration" checked onchange="toggleSignal('vibration')">
+                        <span class="signal-label">
+                            <span class="color-indicator" style="background: #e74c3c;"></span>
+                            Nivel Vibración
+                        </span>
+                    </label>
+                    
+                    <label class="signal-checkbox active">
+                        <input type="checkbox" id="showEnvelope" checked onchange="toggleSignal('envelope')">
+                        <span class="signal-label">
+                            <span class="color-indicator" style="background: #27ae60;"></span>
+                            Envolvente
+                        </span>
+                    </label>
+                    
+                    <label class="signal-checkbox active">
+                        <input type="checkbox" id="showFaultOuter" checked onchange="toggleSignal('faultOuter')">
+                        <span class="signal-label">
+                            <span class="color-indicator" style="background: #f39c12;"></span>
+                            Fallo Pista Externa
+                        </span>
+                    </label>
+                    
+                    <label class="signal-checkbox active">
+                        <input type="checkbox" id="showFaultInner" checked onchange="toggleSignal('faultInner')">
+                        <span class="signal-label">
+                            <span class="color-indicator" style="background: #9b59b6;"></span>
+                            Fallo Pista Interna
+                        </span>
+                    </label>
+                    
+                    <label class="signal-checkbox active">
+                        <input type="checkbox" id="showFaultRolling" checked onchange="toggleSignal('faultRolling')">
+                        <span class="signal-label">
+                            <span class="color-indicator" style="background: #16a085;"></span>
+                            Fallo Elementos Rodantes
+                        </span>
+                    </label>
+                </div>
+
+                <!-- Canvas Único -->
+                <canvas id="mainChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ========================================
+        // ANALIZADOR DE RODAMIENTOS
+        // ========================================
+        
+        class BearingAnalyzer {
+            constructor() {
+                this.audioContext = null;
+                this.analyser = null;
+                this.microphone = null;
+                this.stream = null;
+                this.isAnalyzing = false;
+                this.currentBearing = null;
+                this.sampleRate = 44100;
+                this.fftSize = 4096;
+                this.dataHistory = [];
+                this.analysisTimer = null;
+                this.characteristicFreqs = null;
+                
+                // Canvas y contexto
+                this.canvas = null;
+                this.ctx = null;
+                
+                // Datos para graficar
+                this.signals = {
+                    spectrum: { data: [], color: '#3498db', visible: true, label: 'Espectro' },
+                    vibration: { data: [], color: '#e74c3c', visible: true, label: 'Vibración' },
+                    envelope: { data: [], color: '#27ae60', visible: true, label: 'Envolvente' },
+                    faultOuter: { data: [], color: '#f39c12', visible: true, label: 'Fallo Pista Externa' },
+                    faultInner: { data: [], color: '#9b59b6', visible: true, label: 'Fallo Pista Interna' },
+                    faultRolling: { data: [], color: '#16a085', visible: true, label: 'Fallo Elementos' }
+                };
+                
+                this.maxDataPoints = 100;
+                this.startTime = Date.now();
+                this.detectedRPM = null;
+            }
+
+            async initialize() {
+                try {
+                    console.log('🎤 Solicitando permisos...');
+                    
+                    this.stream = await navigator.mediaDevices.getUserMedia({
+                        audio: {
+                            echoCancellation: false,
+                            noiseSuppression: false,
+                            autoGainControl: false,
+                            channelCount: 1
+                        }
+                    });
+
+                    this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    this.sampleRate = this.audioContext.sampleRate;
+                    this.analyser = this.audioContext.createAnalyser();
+                    this.analyser.fftSize = this.fftSize;
+                    
+                    this.microphone = this.audioContext.createMediaStreamSource(this.stream);
+                    this.microphone.connect(this.analyser);
+
+                    // Inicializar canvas
+                    this.canvas = document.getElementById('mainChart');
+                    this.ctx = this.canvas.getContext('2d');
+                    this.resizeCanvas();
+                    window.addEventListener('resize', () => this.resizeCanvas());
+
+                    console.log('✅ Analizador inicializado');
+                    return true;
+                } catch (error) {
+                    console.error('❌ Error:', error);
+                    return false;
+                }
+            }
+
+            resizeCanvas() {
+                const container = this.canvas.parentElement;
+                this.canvas.width = container.clientWidth;
+                this.canvas.height = 500;
+            }
+
+            setBearingType(bearingModel) {
+                this.currentBearing = window.bearingDatabase[bearingModel];
+                if (!this.currentBearing) {
+                    throw new Error(`Modelo no encontrado: ${bearingModel}`);
+                }
+                this.calculateCharacteristicFrequencies();
+            }
+
+            calculateCharacteristicFrequencies() {
+                if (!this.currentBearing) return;
+
+                const rpm = parseFloat(document.getElementById('rotationalSpeed')?.value || 1500);
+                const hz = rpm / 60;
+
+                this.characteristicFreqs = {
+                    BPFO: this.currentBearing.frequencies.BPFO * hz,
+                    BPFI: this.currentBearing.frequencies.BPFI * hz,
+                    BSF: this.currentBearing.frequencies.BSF * hz,
+                    FTF: this.currentBearing.frequencies.FTF * hz
+                };
+            }
+
+            // ========================================
+            // DETECCIÓN AUTOMÁTICA DE RPM
+            // ========================================
+
+            async detectRPM(callback) {
+                if (!this.analyser || !this.currentBearing) {
+                    return null;
+                }
+
+                const samples = [];
+                const sampleCount = 50; // 5 segundos a 100ms por muestra
+
+                return new Promise((resolve) => {
+                    let currentSample = 0;
+                    
+                    const interval = setInterval(() => {
+                        const frequencyData = new Float32Array(this.analyser.frequencyBinCount);
+                        this.analyser.getFloatFrequencyData(frequencyData);
+                        samples.push(Array.from(frequencyData));
+                        
+                        currentSample++;
+                        
+                        if (callback) {
+                            callback(currentSample, sampleCount);
+                        }
+                        
+                        if (currentSample >= sampleCount) {
+                            clearInterval(interval);
+                            
+                            // Promediar muestras
+                            const avgData = new Float32Array(samples[0].length);
+                            for (let i = 0; i < avgData.length; i++) {
+                                let sum = 0;
+                                for (let j = 0; j < samples.length; j++) {
+                                    sum += samples[j][i];
+                                }
+                                avgData[i] = sum / samples.length;
+                            }
+                            
+                            // Detectar RPM
+                            const result = this.calculateRPMFromSpectrum(avgData);
+                            resolve(result);
+                        }
+                    }, 100);
+                });
+            }
+
+            calculateRPMFromSpectrum(frequencyData) {
+                const peaks = this.findSpectralPeaks(frequencyData, 20);
+                const estimates = [];
+
+                // Método 1: Usar BPFO (más confiable)
+                const bpfoRPM = this.estimateRPMFromFrequency(peaks, this.currentBearing.frequencies.BPFO, 'BPFO');
+                if (bpfoRPM) estimates.push(bpfoRPM);
+
+                // Método 2: Usar BPFI
+                const bpfiRPM = this.estimateRPMFromFrequency(peaks, this.currentBearing.frequencies.BPFI, 'BPFI');
+                if (bpfiRPM) estimates.push(bpfiRPM);
+
+                // Método 3: Usar BSF
+                const bsfRPM = this.estimateRPMFromFrequency(peaks, this.currentBearing.frequencies.BSF, 'BSF');
+                if (bsfRPM) estimates.push(bsfRPM);
+
+                // Método 4: Frecuencia fundamental (1x RPM)
+                const fundamental = peaks.find(p => p.frequency >= 5 && p.frequency <= 200);
+                if (fundamental) {
+                    estimates.push({
+                        rpm: Math.round(fundamental.frequency * 60),
+                        confidence: 60,
+                        method: 'Fundamental (1x)'
+                    });
+                }
+
+                if (estimates.length === 0) {
+                    return null;
+                }
+
+                // Calcular promedio ponderado
+                const totalConfidence = estimates.reduce((sum, est) => sum + est.confidence, 0);
+                const weightedRPM = estimates.reduce((sum, est) => sum + (est.rpm * est.confidence), 0) / totalConfidence;
+                
+                // Encontrar el método con mayor confianza
+                const bestMethod = estimates.reduce((best, current) => 
+                    current.confidence > best.confidence ? current : best
+                );
+
+                return {
+                    rpm: Math.round(weightedRPM),
+                    confidence: Math.round(totalConfidence / estimates.length),
+                    method: bestMethod.method,
+                    estimates: estimates
+                };
+            }
+
+            findSpectralPeaks(frequencyData, numPeaks = 20) {
+                const peaks = [];
+                const binWidth = this.sampleRate / this.fftSize;
+                const minPeakDistance = 5;
+
+                for (let i = minPeakDistance; i < frequencyData.length - minPeakDistance; i++) {
+                    const amplitude = Math.pow(10, frequencyData[i] / 20);
+                    
+                    let isPeak = true;
+                    for (let j = -minPeakDistance; j <= minPeakDistance; j++) {
+                        if (j !== 0 && frequencyData[i + j] > frequencyData[i]) {
+                            isPeak = false;
+                            break;
+                        }
+                    }
+                    
+                    if (isPeak && amplitude > 0.01) {
+                        peaks.push({
+                            frequency: i * binWidth,
+                            amplitude: amplitude,
+                            bin: i
+                        });
+                    }
+                }
+                
+                peaks.sort((a, b) => b.amplitude - a.amplitude);
+                return peaks.slice(0, numPeaks);
+            }
+
+            estimateRPMFromFrequency(peaks, characteristicMultiplier, methodName) {
+                // Buscar picos que coincidan con la frecuencia característica
+                const expectedRange = [30, 500]; // Rango de frecuencias esperadas para características
+                
+                const candidates = peaks.filter(p => 
+                    p.frequency >= expectedRange[0] && 
+                    p.frequency <= expectedRange[1]
+                );
+
+                if (candidates.length === 0) return null;
+
+                // Tomar el pico más prominente
+                const peak = candidates[0];
+                
+                // Calcular RPM: freq_característica = multiplicador × (RPM/60)
+                // RPM = (freq_característica / multiplicador) × 60
+                const rpm = (peak.frequency / characteristicMultiplier) * 60;
+
+                // Verificar que esté en rango razonable
+                if (rpm >= 300 && rpm <= 10000) {
+                    return {
+                        rpm: Math.round(rpm),
+                        confidence: Math.min(peak.amplitude * 100, 95),
+                        method: methodName
+                    };
+                }
+
+                return null;
+            }
+
+            // ========================================
+            // ANÁLISIS CONTINUO
+            // ========================================
+
+            startAnalysis() {
+                if (!this.currentBearing) {
+                    throw new Error('Selecciona un rodamiento');
+                }
+                if (!this.analyser) {
+                    throw new Error('Analizador no inicializado');
+                }
+
+                this.isAnalyzing = true;
+                this.startTime = Date.now();
+                this.analysisTimer = setInterval(() => this.analyze(), 100);
+                console.log('✅ Análisis iniciado');
+            }
+
+            stopAnalysis() {
+                this.isAnalyzing = false;
+                if (this.analysisTimer) {
+                    clearInterval(this.analysisTimer);
+                    this.analysisTimer = null;
+                }
+                console.log('⏸️ Análisis detenido');
+            }
+
+            analyze() {
+                if (!this.isAnalyzing) return;
+
+                const frequencyData = new Float32Array(this.analyser.frequencyBinCount);
+                const timeData = new Float32Array(this.analyser.frequencyBinCount);
+                
+                this.analyser.getFloatFrequencyData(frequencyData);
+                this.analyser.getFloatTimeDomainData(timeData);
+
+                const currentTime = (Date.now() - this.startTime) / 1000;
+
+                // Procesar datos
+                const spectrum = this.processSpectrum(frequencyData);
+                const vibration = this.processVibration(timeData);
+                const envelope = this.processEnvelope(timeData);
+                const faults = this.detectFaults(frequencyData);
+
+                // Actualizar señales
+                this.updateSignal('spectrum', currentTime, spectrum);
+                this.updateSignal('vibration', currentTime, vibration);
+                this.updateSignal('envelope', currentTime, envelope);
+                this.updateSignal('faultOuter', currentTime, faults.outerRace);
+                this.updateSignal('faultInner', currentTime, faults.innerRace);
+                this.updateSignal('faultRolling', currentTime, faults.rollingElement);
+
+                // Dibujar
+                this.drawChart();
+
+                // Actualizar diagnóstico
+                this.updateDiagnosis(faults);
+            }
+
+            processSpectrum(frequencyData) {
+                let sum = 0;
+                for (let i = 0; i < Math.min(500, frequencyData.length); i++) {
+                    sum += Math.pow(10, frequencyData[i] / 20);
+                }
+                return (sum / 500) * 10;
+            }
+
+            processVibration(timeData) {
+                const rms = Math.sqrt(timeData.reduce((acc, val) => acc + val * val, 0) / timeData.length);
+                return rms * 100;
+            }
+
+            processEnvelope(timeData) {
+                let sum = 0;
+                for (let i = 0; i < timeData.length; i++) {
+                    sum += Math.abs(timeData[i]);
+                }
+                return (sum / timeData.length) * 50;
+            }
+
+            detectFaults(frequencyData) {
+                if (!this.characteristicFreqs) {
+                    return { outerRace: 0, innerRace: 0, rollingElement: 0 };
+                }
+
+                return {
+                    outerRace: this.detectFaultAtFreq(frequencyData, this.characteristicFreqs.BPFO),
+                    innerRace: this.detectFaultAtFreq(frequencyData, this.characteristicFreqs.BPFI),
+                    rollingElement: this.detectFaultAtFreq(frequencyData, this.characteristicFreqs.BSF)
+                };
+            }
+
+            detectFaultAtFreq(frequencyData, targetFreq) {
+                const binWidth = this.sampleRate / this.fftSize;
+                const targetBin = Math.round(targetFreq / binWidth);
+                const tolerance = 10;
+                
+                let maxAmplitude = -Infinity;
+                for (let i = Math.max(0, targetBin - tolerance); 
+                     i < Math.min(frequencyData.length, targetBin + tolerance); i++) {
+                    if (frequencyData[i] > maxAmplitude) {
+                        maxAmplitude = frequencyData[i];
+                    }
+                }
+                
+                const amplitude = Math.pow(10, maxAmplitude / 20);
+                return Math.min(amplitude * 20, 100);
+            }
+
+            updateSignal(signalName, time, value) {
+                const signal = this.signals[signalName];
+                signal.data.push({ x: time, y: value });
+                
+                if (signal.data.length > this.maxDataPoints) {
+                    signal.data.shift();
+                }
+            }
+
+            drawChart() {
+                if (!this.ctx) return;
+
+                const width = this.canvas.width;
+                const height = this.canvas.height;
+                const padding = 50;
+
+                // Limpiar canvas
+                this.ctx.fillStyle = '#ffffff';
+                this.ctx.fillRect(0, 0, width, height);
+
+                // Dibujar grid
+                this.drawGrid(width, height, padding);
+
+                // Dibujar cada señal visible
+                Object.entries(this.signals).forEach(([name, signal]) => {
+                    if (signal.visible && signal.data.length > 0) {
+                        this.drawSignal(signal, width, height, padding);
+                    }
+                });
+
+                // Dibujar leyenda
+                this.drawLegend(width, height);
+            }
+
+            drawGrid(width, height, padding) {
+                const ctx = this.ctx;
+                ctx.strokeStyle = '#e0e0e0';
+                ctx.lineWidth = 1;
+
+                // Líneas verticales
+                for (let i = 0; i <= 10; i++) {
+                    const x = padding + (width - 2 * padding) * (i / 10);
+                    ctx.beginPath();
+                    ctx.moveTo(x, padding);
+                    ctx.lineTo(x, height - padding);
+                    ctx.stroke();
+                }
+
+                // Líneas horizontales
+                for (let i = 0; i <= 10; i++) {
+                    const y = padding + (height - 2 * padding) * (i / 10);
+                    ctx.beginPath();
+                    ctx.moveTo(padding, y);
+                    ctx.lineTo(width - padding, y);
+                    ctx.stroke();
+                }
+
+                // Ejes
+                ctx.strokeStyle = '#333';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(padding, padding, width - 2 * padding, height - 2 * padding);
+
+                // Etiquetas
+                ctx.fillStyle = '#333';
+                ctx.font = '12px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('Tiempo (s)', width / 2, height - 10);
+                
+                ctx.save();
+                ctx.translate(15, height / 2);
+                ctx.rotate(-Math.PI / 2);
+                ctx.fillText('Amplitud', 0, 0);
+                ctx.restore();
+            }
+
+            drawSignal(signal, width, height, padding) {
+                if (signal.data.length < 2) return;
+
+                const ctx = this.ctx;
+                const chartWidth = width - 2 * padding;
+                const chartHeight = height - 2 * padding;
+
+                const times = signal.data.map(d => d.x);
+                const values = signal.data.map(d => d.y);
+                const minTime = Math.min(...times);
+                const maxTime = Math.max(...times);
+                const minValue = 0;
+                const maxValue = 100;
+
+                ctx.strokeStyle = signal.color;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+
+                signal.data.forEach((point, index) => {
+                    const x = padding + ((point.x - minTime) / (maxTime - minTime || 1)) * chartWidth;
+                    const y = height - padding - ((point.y - minValue) / (maxValue - minValue || 1)) * chartHeight;
+                    
+                    if (index === 0) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                });
+
+                ctx.stroke();
+            }
+
+            drawLegend(width, height) {
+                const ctx = this.ctx;
+                const legendX = width - 200;
+                const legendY = 70;
+                let yOffset = 0;
+
+                ctx.font = 'bold 14px Arial';
+                ctx.fillStyle = '#333';
+                ctx.fillText('Señales:', legendX, legendY);
+
+                Object.entries(this.signals).forEach(([name, signal]) => {
+                    if (signal.visible) {
+                        yOffset += 25;
+                        
+                        ctx.fillStyle = signal.color;
+                        ctx.fillRect(legendX, legendY + yOffset - 10, 15, 15);
+                        
+                        ctx.fillStyle = '#333';
+                        ctx.font = '12px Arial';
+                        ctx.fillText(signal.label, legendX + 20, legendY + yOffset);
+                    }
+                });
+            }
+
+            updateDiagnosis(faults) {
+                const status = document.getElementById('currentStatus');
+                const faultDetection = document.getElementById('faultDetection');
+                const confidenceLevel = document.getElementById('confidenceLevel');
+
+                let overallStatus = 'ok';
+                let detectedFaults = [];
+                let maxConfidence = 0;
+
+                if (faults.outerRace > 50) {
+                    detectedFaults.push('Pista Externa');
+                    maxConfidence = Math.max(maxConfidence, faults.outerRace);
+                    overallStatus = faults.outerRace > 80 ? 'critical' : 'warning';
+                }
+                if (faults.innerRace > 50) {
+                    detectedFaults.push('Pista Interna');
+                    maxConfidence = Math.max(maxConfidence, faults.innerRace);
+                    if (overallStatus !== 'critical') {
+                        overallStatus = faults.innerRace > 80 ? 'critical' : 'warning';
+                    }
+                }
+                if (faults.rollingElement > 50) {
+                    detectedFaults.push('Elementos Rodantes');
+                    maxConfidence = Math.max(maxConfidence, faults.rollingElement);
+                    if (overallStatus !== 'critical') {
+                        overallStatus = faults.rollingElement > 80 ? 'critical' : 'warning';
+                    }
+                }
+
+                const badge = status.querySelector('.status-badge');
+                badge.className = `status-badge status-${overallStatus}`;
+                badge.textContent = overallStatus.toUpperCase();
+                
+                const text = status.querySelector('p');
+                text.textContent = detectedFaults.length > 0 ? 'Fallos detectados' : 'Normal';
+                
+                faultDetection.textContent = `Fallos: ${
+                    detectedFaults.length > 0 ? detectedFaults.join(', ') : 'Ninguno'
+                }`;
+                
+                confidenceLevel.textContent = `Confianza: ${maxConfidence.toFixed(1)}%`;
+            }
+
+            cleanup() {
+                if (this.stream) {
+                    this.stream.getTracks().forEach(track => track.stop());
+                }
+                if (this.audioContext) {
+                    this.audioContext.close();
+                }
+                this.stopAnalysis();
+            }
+        }
+
+        // ========================================
+        // FUNCIONES GLOBALES
+        // ========================================
+
+        let analyzer = null;
+        let isMobile = window.innerWidth <= 768;
+        let detectedRPMData = null;
+
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('open');
+        }
+
+        function toggleSignal(signalName) {
+            if (analyzer) {
+                analyzer.signals[signalName].visible = !analyzer.signals[signalName].visible;
+                
+                const checkbox = document.getElementById('show' + signalName.charAt(0).toUpperCase() + signalName.slice(1));
+                const label = checkbox.parentElement;
+                label.classList.toggle('active', analyzer.signals[signalName].visible);
+            }
+        }
+
+        function showAlert(message, type) {
+            const alert = document.getElementById('alert');
+            alert.textContent = message;
+            alert.className = `alert alert-${type}`;
+            alert.style.display = 'block';
+            setTimeout(() => alert.style.display = 'none', 5000);
+        }
+
+        function updateBearingInfo() {
+            const bearingType = document.getElementById('bearingType').value;
+            const bearing = window.bearingDatabase[bearingType];
+            
+            if (bearing) {
+                document.getElementById('innerDiameter').textContent = bearing.innerDiameter;
+                document.getElementById('outerDiameter').textContent = bearing.outerDiameter;
+                document.getElementById('width').textContent = bearing.width;
+                document.getElementById('ballCount').textContent = bearing.ballCount;
+                
+                if (analyzer) {
+                    analyzer.setBearingType(bearingType);
+                }
+            }
+        }
+
+        // ========================================
+        // DETECCIÓN AUTOMÁTICA DE RPM
+        // ========================================
+
+        async function detectRPM() {
+            if (!analyzer) {
+                const initialized = await initializeAnalyzer();
+                if (!initialized) return;
+            }
+
+            const bearingType = document.getElementById('bearingType').value;
+            analyzer.setBearingType(bearingType);
+
+            const button = document.getElementById('detectRPMButton');
+            const resultDiv = document.getElementById('rpmResult');
+            
+            button.disabled = true;
+            button.textContent = '🎧 Escuchando... 0%';
+            resultDiv.classList.remove('show');
+
+            try {
+                const result = await analyzer.detectRPM((current, total) => {
+                    const percent = Math.round((current / total) * 100);
+                    button.textContent = `🎧 Escuchando... ${percent}%`;
+                });
+
+                button.disabled = false;
+                button.textContent = '🎯 Detectar RPM';
+
+                if (result) {
+                    detectedRPMData = result;
+                    
+                    document.getElementById('detectedRPMValue').textContent = result.rpm + ' RPM';
+                    document.getElementById('confidenceFill').style.width = result.confidence + '%';
+                    document.getElementById('confidenceFill').textContent = result.confidence + '%';
+                    document.getElementById('detectionMethod').textContent = `Método: ${result.method}`;
+                    
+                    resultDiv.classList.add('show');
+                    showAlert(`✅ RPM detectado: ${result.rpm} (Confianza: ${result.confidence}%)`, 'success');
+                    
+                    console.log('Estimaciones:', result.estimates);
+                } else {
+                    showAlert('❌ No se pudo detectar RPM. Asegúrate de que el rodamiento esté girando', 'error');
+                }
+
+            } catch (error) {
+                button.disabled = false;
+                button.textContent = '🎯 Detectar RPM';
+                showAlert('Error: ' + error.message, 'error');
+            }
+        }
+
+        function applyDetectedRPM() {
+            if (detectedRPMData) {
+                document.getElementById('rotationalSpeed').value = detectedRPMData.rpm;
+                updateBearingInfo();
+                showAlert(`✅ RPM aplicado: ${detectedRPMData.rpm}`, 'success');
+                
+                if (isMobile) {
+                    document.getElementById('sidebar').classList.remove('open');
+                }
+            }
+        }
+
+        // ========================================
+        // INICIALIZACIÓN Y CONTROLES
+        // ========================================
+
+        async function initializeAnalyzer() {
+            try {
+                console.log('🎤 Iniciando...');
+                
+                if (!navigator.mediaDevices) {
+                    showAlert('❌ Tu navegador no soporta captura de audio', 'error');
+                    return false;
+                }
+                
+                analyzer = new BearingAnalyzer();
+                
+                showAlert('🎤 Solicitando permisos... PERMITE el acceso', 'info');
+                
+                const initialized = await analyzer.initialize();
+                
+                if (!initialized) {
+                    showAlert('❌ Error al inicializar', 'error');
+                    return false;
+                }
+                
+                showAlert('✅ Analizador listo', 'success');
+                updateBearingInfo();
+                return true;
+                
+            } catch (error) {
+                console.error('Error:', error);
+                showAlert('Error: ' + error.message, 'error');
+                return false;
+            }
+        }
+
+        async function startAnalysis() {
+            if (!analyzer) {
+                const initialized = await initializeAnalyzer();
+                if (!initialized) return;
+            }
+            
+            try {
+                const bearingType = document.getElementById('bearingType').value;
+                const rpm = parseFloat(document.getElementById('rotationalSpeed').value);
+                
+                if (!rpm || rpm <= 0) {
+                    showAlert('Ingrese velocidad válida', 'warning');
+                    return;
+                }
+
+                analyzer.setBearingType(bearingType);
+                analyzer.startAnalysis();
+                
+                document.getElementById('startButton').disabled = true;
+                document.getElementById('stopButton').disabled = false;
+                
+                showAlert('✅ Análisis iniciado', 'success');
+                
+                if (isMobile) {
+                    document.getElementById('sidebar').classList.remove('open');
+                }
+            } catch (error) {
+                showAlert('Error: ' + error.message, 'error');
+            }
+        }
+
+        function stopAnalysis() {
+            if (analyzer) {
+                analyzer.stopAnalysis();
+                document.getElementById('startButton').disabled = false;
+                document.getElementById('stopButton').disabled = true;
+                showAlert('⏸️ Análisis detenido', 'info');
+            }
+        }
+
+        async function resetAnalyzer() {
+            if (analyzer) {
+                analyzer.cleanup();
+            }
+            analyzer = null;
+            detectedRPMData = null;
+            showAlert('🔄 Reiniciando...', 'info');
+            await initializeAnalyzer();
+        }
+
+        // Inicialización
+        window.addEventListener('resize', () => {
+            isMobile = window.innerWidth <= 768;
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('✅ Aplicación cargada');
+            updateBearingInfo();
+        });
+    </script>
+</body>
+</html>
