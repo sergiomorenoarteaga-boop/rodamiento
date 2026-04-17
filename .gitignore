@@ -1,0 +1,17 @@
+# Ignored files
+
+# Logs
+logs/
+*.log
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Dependency directories
+node_modules/
+.bower_cache/
+
+# Build outputs
+/dist/
+/build/
